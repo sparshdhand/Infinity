@@ -395,8 +395,8 @@ export default function ChatPage() {
           const trimmed = line.trim();
           if (!trimmed) return null;
 
-          if (trimmed.startsWith('*') || trimmed.startsWith('-')) {
-            const cleanText = trimmed.replace(/^[\*\-\s]+/, '');
+          if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+            const cleanText = trimmed.substring(2).trim();
             return (
               <ul key={idx} className="list-disc pl-5 space-y-1">
                 <li className="text-[var(--text-primary)] leading-relaxed">
