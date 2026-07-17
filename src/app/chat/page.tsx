@@ -302,7 +302,91 @@ export default function ChatPage() {
     return { today, yesterday, older };
   };
 
-  // Helper formatting for custom double-spaced bullet lists
+  // Parse citations [text](cite:Source|Excerpt) and markdown bold text dynamically
+  const parseMarkdown = (text: string) => {
+    const citeRegex = /\[([^\]]+)\]\(cite:([^|]+)\|([^)]+)\)/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+
+    const parseBold = (plainText: string, keyPrefix: string) => {
+      const boldRegex = /\*\*(.*?)\*\*/g;
+      const boldParts = [];
+      let bLastIndex = 0;
+      let bMatch;
+
+      while ((bMatch = boldRegex.exec(plainText)) !== null) {
+        if (bMatch.index > bLastIndex) {
+          boldParts.push(plainText.substring(bLastIndex, bMatch.index));
+        }
+        boldParts.push(
+          <strong key={`${keyPrefix}-b-${bMatch.index}`} className="font-semibold text-[var(--text-primary)]">
+            {bMatch[1]}
+          </strong>
+        );
+        bLastIndex = boldRegex.lastIndex;
+      }
+      if (bLastIndex < plainText.length) {
+        boldParts.push(plainText.substring(bLastIndex));
+      }
+      return boldParts.length > 0 ? boldParts : plainText;
+    };
+
+    while ((match = citeRegex.exec(text)) !== null) {
+      const matchIndex = match.index;
+      if (matchIndex > lastIndex) {
+        const plainSegment = text.substring(lastIndex, matchIndex);
+        const parsed = parseBold(plainSegment, `plain-${matchIndex}`);
+        if (Array.isArray(parsed)) {
+          parts.push(...(parsed as any));
+        } else {
+          parts.push(parsed);
+        }
+      }
+
+      const highlightedText = match[1];
+      const sourceName = match[2];
+      const excerpt = match[3];
+
+      parts.push(
+        <span key={`cite-${matchIndex}`} className="relative group inline cursor-help">
+          <span className="bg-[oklch(0.72_0.04_150_/_0.15)] dark:bg-[oklch(0.68_0.06_150_/_0.18)] border-b-2 border-dotted border-[var(--accent-healing)] px-0.5 rounded-[3px] text-[var(--text-primary)] hover:bg-[oklch(0.72_0.04_150_/_0.25)] transition-colors inline">
+            {highlightedText}
+          </span>
+          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-64 md:w-80 p-3.5 bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-[16px] shadow-elevated opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 text-xs text-[var(--text-primary)] leading-relaxed whitespace-normal break-words font-sans">
+            <span className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-healing)]" />
+              <strong className="text-[10px] uppercase tracking-wider text-[var(--accent-healing)]">
+                Verified Medical Source
+              </strong>
+            </span>
+            <strong className="block text-[11px] text-[var(--text-primary)] mb-1">
+              Source: {sourceName}
+            </strong>
+            <span className="block italic text-[var(--text-secondary)] text-[11px] border-t border-[var(--border-light)] pt-1.5 mt-1.5">
+              "{excerpt}"
+            </span>
+          </span>
+        </span>
+      );
+
+      lastIndex = citeRegex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      const remainingSegment = text.substring(lastIndex);
+      const parsed = parseBold(remainingSegment, 'rem');
+      if (Array.isArray(parsed)) {
+        parts.push(...(parsed as any));
+      } else {
+        parts.push(parsed);
+      }
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
+  // Helper formatting for custom double-spaced bullet lists and inline markdown
   const formatMessageContent = (content: string) => {
     const lines = content.split('\n');
     return (
@@ -312,33 +396,11 @@ export default function ChatPage() {
           if (!trimmed) return null;
 
           if (trimmed.startsWith('*') || trimmed.startsWith('-')) {
-            let cleanText = trimmed.replace(/^[\*\-\s]+/, '');
-            
-            const parts = [];
-            let lastIndex = 0;
-            const regex = /\*\*(.*?)\*\*/g;
-            let match;
-            
-            while ((match = regex.exec(cleanText)) !== null) {
-              if (match.index > lastIndex) {
-                parts.push(cleanText.substring(lastIndex, match.index));
-              }
-              parts.push(
-                <strong key={match.index} className="font-semibold text-[var(--text-primary)]">
-                  {match[1]}
-                </strong>
-              );
-              lastIndex = regex.lastIndex;
-            }
-            
-            if (lastIndex < cleanText.length) {
-              parts.push(cleanText.substring(lastIndex));
-            }
-
+            const cleanText = trimmed.replace(/^[\*\-\s]+/, '');
             return (
               <ul key={idx} className="list-disc pl-5 space-y-1">
                 <li className="text-[var(--text-primary)] leading-relaxed">
-                  {parts.length > 0 ? parts : cleanText}
+                  {parseMarkdown(cleanText)}
                 </li>
               </ul>
             );
@@ -346,7 +408,7 @@ export default function ChatPage() {
 
           return (
             <p key={idx} className="leading-relaxed">
-              {trimmed}
+              {parseMarkdown(trimmed)}
             </p>
           );
         })}

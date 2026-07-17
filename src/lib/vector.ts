@@ -14,8 +14,11 @@ export async function getEmbedding(text: string): Promise<number[]> {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-    const result = await model.embedContent(text);
+    const model = genAI.getGenerativeModel({ model: 'gemini-embedding-2' });
+    const result = await model.embedContent({
+      content: { role: 'user', parts: [{ text }] },
+      outputDimensionality: 768,
+    } as any);
     if (result && result.embedding && result.embedding.values) {
       return result.embedding.values;
     }
