@@ -41,6 +41,9 @@ export default function ChatPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [preAuthPrompt, setPreAuthPrompt] = useState('');
 
   // Chat & Sidebar State
   const [sessions, setSessions] = useState<SessionPreview[]>([]);
@@ -59,6 +62,24 @@ export default function ChatPage() {
   useEffect(() => {
     fetchSession();
   }, []);
+
+  // Track mouse coordinates for interactive glow when not authenticated
+  useEffect(() => {
+    if (session) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [session]);
+
+  // Auto-send prompt entered pre-auth once login succeeds
+  useEffect(() => {
+    if (session && preAuthPrompt.trim()) {
+      handleSendMessage(undefined, preAuthPrompt);
+      setPreAuthPrompt('');
+    }
+  }, [session, preAuthPrompt]);
 
   // When session is found, load the sidebar list of chats
   useEffect(() => {
@@ -342,133 +363,337 @@ export default function ChatPage() {
     );
   }
 
-  // Not Logged In -> Split Screen Login Page
+  // Not Logged In -> Full Scrollable Onboarding Landing Page + Popup Card
   if (!session) {
     return (
-      <div className="min-h-screen flex bg-[var(--bg-primary)]">
-        {/* Left Side: Editorial Vignette with Pulse Circle */}
-        <div className="hidden md:flex md:w-[55%] flex-col justify-between p-12 bg-[var(--bg-sidebar)] relative overflow-hidden border-r border-[var(--border-light)]">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_45%,rgba(114,204,150,0.08),transparent_70%)] pointer-events-none" />
-          
-          <div className="flex items-center gap-2.5 z-10">
+      <div 
+        className="min-h-screen w-screen flex flex-col bg-[var(--bg-primary)] overflow-y-auto scroll-smooth relative"
+        onMouseMove={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+        }}
+      >
+        {/* Ambient background drifting gradient orbs */}
+        <div className="ambient-orbs-container absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="orb orb-1 absolute rounded-full bg-[var(--accent-healing)] blur-[80px]" style={{ width: 450, height: 450, left: '10%', top: '15%' }} />
+          <div className="orb orb-2 absolute rounded-full bg-[oklch(0.65_0.05_220)] blur-[80px]" style={{ width: 400, height: 400, right: '15%', bottom: '10%' }} />
+          <div className="orb orb-3 absolute rounded-full bg-[var(--accent-crisis)] blur-[80px]" style={{ width: 350, height: 350, left: '45%', top: '50%' }} />
+        </div>
+
+        {/* Cursor Glow Tracker Blob */}
+        <div 
+          className="glow-blob pointer-events-none absolute rounded-full z-10 transition-all duration-100"
+          style={{
+            width: 600,
+            height: 600,
+            background: 'radial-gradient(circle, oklch(0.72 0.04 150 / 0.15) 0%, transparent 70%)',
+            left: mousePos.x,
+            top: mousePos.y,
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+
+        {/* Sticky Header Nav */}
+        <nav className="sticky top-0 flex justify-between items-center px-6 md:px-12 py-4 border-b border-[var(--border-light)] z-20 bg-[var(--card-bg)] backdrop-blur-md">
+          <div className="flex items-center gap-2 font-serif text-xl font-semibold text-[var(--text-primary)]">
             <span className="w-3.5 h-3.5 rounded-full bg-[var(--accent-healing)]" />
-            <span className="font-serif text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Infinity</span>
+            <span>Infinity</span>
           </div>
-
-          <div className="flex flex-col items-center justify-center flex-1 z-10">
-            {/* Ambient Breathing animation */}
-            <div className="w-56 h-56 rounded-full bg-gradient-to-tr from-[rgba(114,204,150,0.05)] to-[rgba(114,204,150,0.15)] flex items-center justify-center animate-pulse duration-[8000ms]">
-              <div className="w-36 h-36 rounded-full border border-[var(--accent-healing)] opacity-20 flex items-center justify-center">
-                <span className="font-serif italic text-xs text-[var(--accent-healing)] opacity-60">breathe</span>
-              </div>
-            </div>
-            <p className="mt-8 font-serif text-lg font-light text-[var(--text-secondary)] text-center max-w-sm">
-              "Your space of quiet reflection."
-            </p>
-          </div>
-
-          <div className="z-10 text-[11px] text-[var(--text-secondary)] opacity-60">
-            © {new Date().getFullYear()} Infinity Health. Standard encryption active.
-          </div>
-        </div>
-
-        {/* Right Side: Clean Login Form */}
-        <div className="w-full md:w-[45%] flex items-center justify-center p-6 md:p-12">
-          <div className="w-full max-w-[380px]">
-            <h2 className="font-serif text-3xl font-medium tracking-tight mb-2 text-[var(--text-primary)] text-center md:text-left">
-              Welcome back
-            </h2>
-            <p className="text-sm text-[var(--text-secondary)] mb-8 text-center md:text-left leading-relaxed">
-              A quiet space, just for you. Sign in to proceed.
-            </p>
-
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div>
-                <label htmlFor="email" className="block text-[13px] font-medium text-[var(--text-secondary)] mb-2">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full font-sans input-inset rounded-[12px] px-4 py-3 text-sm"
-                  placeholder="user@example.com"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-[13px] font-medium text-[var(--text-secondary)] mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full font-sans input-inset rounded-[12px] px-4 py-3 text-sm pr-11"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              {authError && (
-                <p className="text-xs text-[var(--error)] font-medium">{authError}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={loggingIn}
-                className="w-full font-sans font-semibold py-3 px-4 rounded-[12px] bg-[var(--accent-healing)] text-white hover:opacity-95 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
-              >
-                {loggingIn ? (
-                  <>
-                    <div className="w-4 h-4 rounded-full border border-white border-t-transparent animate-spin" />
-                    <span>Entering...</span>
-                  </>
-                ) : (
-                  'Enter Sanctuary'
-                )}
-              </button>
-            </form>
-
-            <div className="my-5 flex items-center justify-between gap-3 text-xs text-[var(--text-secondary)]">
-              <span className="h-px flex-1 bg-[var(--border-light)]" />
-              <span>or continue with</span>
-              <span className="h-px flex-1 bg-[var(--border-light)]" />
-            </div>
-
-            <button
-              onClick={() => signIn('google')}
-              className="w-full font-sans font-semibold py-3 px-4 rounded-[12px] bg-[var(--bg-secondary)] border border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors flex items-center justify-center gap-2"
+          <div className="flex items-center gap-6">
+            <a href="#prompts" className="hidden sm:inline text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Prompts</a>
+            <a href="#compare" className="hidden sm:inline text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Comparison</a>
+            <a href="#features" className="hidden sm:inline text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Capabilities</a>
+            <a href="#limitations" className="hidden sm:inline text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Limitations</a>
+            <button 
+              onClick={() => setShowLoginModal(true)} 
+              className="text-xs font-semibold py-2 px-5 rounded-full border border-[var(--border-light)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--accent-healing)] text-[var(--text-primary)] transition-all hover:scale-[1.03]"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-              </svg>
-              <span>Sign in with Google</span>
+              Sign In
             </button>
+          </div>
+        </nav>
 
-            <div className="mt-8 text-center md:text-left">
-              <a href="#" className="text-xs text-[var(--accent-crisis)] hover:underline font-medium">
-                If you are in immediate crisis, call 988.
-              </a>
+        {/* Main Onboarding Content */}
+        <div className="flex-1 max-w-[1000px] mx-auto px-6 md:px-12 pb-36 z-10 relative w-full box-border">
+          {/* Hero Banner */}
+          <section className="text-center py-20 md:py-24">
+            <h1 className="font-serif text-4xl md:text-5xl font-light tracking-tight mb-6 leading-tight text-[var(--text-primary)]">
+              Your space of quiet reflection.
+            </h1>
+            <p className="text-base md:text-lg leading-relaxed text-[var(--text-secondary)] mb-10 max-w-[560px] mx-auto">
+              Infinity is an organic non-clinical mental health sanctuary designed to help you triage anxiety, panic, and burnout using structured guidance and breathing aids.
+            </p>
+            <button 
+              onClick={() => setShowLoginModal(true)} 
+              className="font-sans font-semibold py-4 px-9 rounded-full bg-[var(--accent-healing)] text-white hover:opacity-95 hover:scale-[1.03] transition-all hover:shadow-[0_8px_24px_oklch(0.72_0.04_150_/_0.3)] active:scale-[0.97]"
+            >
+              Enter Sanctuary
+            </button>
+          </section>
+
+          {/* 1. Example Prompts Section */}
+          <section className="mt-20 scroll-mt-24" id="prompts">
+            <h2 className="font-serif text-2xl font-normal text-center mb-10 text-[var(--text-primary)]">Example Prompts</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div 
+                onClick={() => {
+                  setPreAuthPrompt("I am having an active panic attack right now. Help me calm my body down.");
+                  setShowLoginModal(true);
+                }}
+                className="bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-6 cursor-pointer backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-[var(--accent-healing)] hover:shadow-sm"
+              >
+                <div className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Panic Support</div>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">"I am having an active panic attack right now. Help me calm my body down."</p>
+              </div>
+              <div 
+                onClick={() => {
+                  setPreAuthPrompt("Guide me through a box breathing exercise to slow down my heart rate.");
+                  setShowLoginModal(true);
+                }}
+                className="bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-6 cursor-pointer backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-[var(--accent-healing)] hover:shadow-sm"
+              >
+                <div className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Breathing Regulator</div>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">"Guide me through a box breathing exercise to slow down my heart rate."</p>
+              </div>
+              <div 
+                onClick={() => {
+                  setPreAuthPrompt("I feel overwhelmed and exhausted by work pressure. Help me parse this.");
+                  setShowLoginModal(true);
+                }}
+                className="bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-6 cursor-pointer backdrop-blur-md transition-all hover:-translate-y-0.5 hover:border-[var(--accent-healing)] hover:shadow-sm"
+              >
+                <div className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Burnout Check-in</div>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">"I feel overwhelmed and exhausted by work pressure. Help me parse this."</p>
+              </div>
             </div>
+          </section>
+
+          {/* 2. AI Comparison Matrix */}
+          <section className="mt-24 scroll-mt-24" id="compare">
+            <h2 className="font-serif text-2xl font-normal text-center mb-10 text-[var(--text-primary)]">Infinity vs General AI Models</h2>
+            <div className="bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[24px] overflow-hidden backdrop-blur-md">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead>
+                  <tr className="bg-[var(--bg-secondary)]">
+                    <th className="p-4.5 pl-6 font-bold text-[var(--text-primary)] border-b border-[var(--border-light)]">Feature Capability</th>
+                    <th className="p-4.5 font-bold text-[var(--text-primary)] border-b border-[var(--border-light)]">General AI Models</th>
+                    <th className="p-4.5 pr-6 font-bold text-[var(--accent-healing)] border-b border-[var(--border-light)]">Infinity Sanctuary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="p-4.5 pl-6 border-b border-[var(--border-light)]"><strong>Triage Flow</strong></td>
+                    <td className="p-4.5 text-[var(--text-secondary)] border-b border-[var(--border-light)]">Generic prompts or alarmist disclaimers.</td>
+                    <td className="p-4.5 pr-6 text-[var(--accent-healing)] font-semibold border-b border-[var(--border-light)]">Verified medical guidelines mapping.</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4.5 pl-6 border-b border-[var(--border-light)]"><strong>Visual Focus</strong></td>
+                    <td className="p-4.5 text-[var(--text-secondary)] border-b border-[var(--border-light)]">Densely formatted text blocks.</td>
+                    <td className="p-4.5 pr-6 text-[var(--accent-healing)] font-semibold border-b border-[var(--border-light)]">Clean, double-spaced narrow bullet lists.</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4.5 pl-6 border-b border-[var(--border-light)]"><strong>Breathing Aids</strong></td>
+                    <td className="p-4.5 text-[var(--text-secondary)] border-b border-[var(--border-light)]">Text instructions only.</td>
+                    <td className="p-4.5 pr-6 text-[var(--accent-healing)] font-semibold border-b border-[var(--border-light)]">Interactive visual box breathing circle.</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4.5 pl-6"><strong>Session Privacy</strong></td>
+                    <td className="p-4.5 text-[var(--text-secondary)]">Used for training models.</td>
+                    <td className="p-4.5 pr-6 text-[var(--accent-healing)] font-semibold">Encrypted private JWT session records.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* 3. Capabilities Section */}
+          <section className="mt-24 scroll-mt-24" id="features">
+            <h2 className="font-serif text-2xl font-normal text-center mb-10 text-[var(--text-primary)]">What We Do Best</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-8 backdrop-blur-md">
+                <span className="text-3xl mb-4 inline-block">🌿</span>
+                <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Anxiety Triage</h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">Structuring non-clinical support pathways to calm overstimulated autonomic responses.</p>
+              </div>
+              <div className="text-center bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-8 backdrop-blur-md">
+                <span className="text-3xl mb-4 inline-block">✨</span>
+                <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Tactile Focus</h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">Reducing digital glare and cognitive load using highly curated, spacing-heavy typography.</p>
+              </div>
+              <div className="text-center bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-8 backdrop-blur-md">
+                <span className="text-3xl mb-4 inline-block">🫁</span>
+                <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Rhythm Reset</h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">Syncing mental focus through expandable inhale/hold cycles to trigger vagus nerves.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* 4. Limitations Section */}
+          <section className="mt-24 scroll-mt-24" id="limitations">
+            <h2 className="font-serif text-2xl font-normal text-center mb-10 text-[var(--text-primary)]">Safety & Limitations</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-[var(--card-bg)] border border-[var(--accent-crisis)] rounded-[20px] p-8 backdrop-blur-md text-center">
+                <span className="text-3xl mb-4 inline-block">⚠️</span>
+                <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Non-Clinical Support</h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">Infinity is a comforting tool for panic narrowing, not a medical clinic or emergency service substitute.</p>
+              </div>
+              <div className="bg-[var(--card-bg)] border border-[var(--accent-crisis)] rounded-[20px] p-8 backdrop-blur-md text-center">
+                <span className="text-3xl mb-4 inline-block">🔐</span>
+                <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Authentication Required</h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">To save conversation progress securely and prevent session conflicts, users must register via email or Google.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Floating Sticky Bottom prompt bar */}
+        <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[var(--bg-primary)] via-[var(--bg-primary)] to-transparent pt-8 pb-8 px-6 md:px-12 z-20">
+          <div className="max-w-[700px] mx-auto flex items-end gap-3 bg-[var(--chat-bar-bg)] border border-[var(--border-light)] rounded-[24px] p-2 shadow-sm backdrop-blur-md">
+            <textarea
+              rows={1}
+              value={preAuthPrompt}
+              onChange={(e) => setPreAuthPrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  if (preAuthPrompt.trim()) {
+                    setShowLoginModal(true);
+                  }
+                }
+              }}
+              placeholder="Share what is on your mind..."
+              className="flex-1 font-sans bg-transparent border-none px-3 py-3 text-sm focus:outline-none text-[var(--text-primary)] placeholder-[var(--text-secondary)] min-h-[44px] max-h-[80px] resize-none overflow-y-auto"
+            />
+            <button
+              onClick={() => {
+                if (preAuthPrompt.trim()) {
+                  setShowLoginModal(true);
+                }
+              }}
+              className="shrink-0 w-10 h-10 rounded-full bg-[var(--accent-healing)] text-white hover:opacity-95 flex items-center justify-center transition-all focus:outline-none"
+            >
+              <PaperPlaneRight size={18} weight="bold" />
+            </button>
           </div>
         </div>
+
+        {/* Popup Glassmorphism Sign-In Modal Overlay */}
+        <AnimatePresence>
+          {showLoginModal && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-[4px] z-[100] flex items-center justify-center p-6"
+              onClick={() => setShowLoginModal(false)}
+            >
+              <motion.div 
+                initial={{ scale: 0.95, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 20 }}
+                transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+                className="login-card w-full max-w-[400px] bg-[var(--card-bg)] border border-[var(--border-light)] shadow-elevated rounded-[28px] p-8 box-border relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button 
+                  onClick={() => setShowLoginModal(false)}
+                  className="close-card-btn absolute top-5 right-5 w-7 h-7 rounded-full border border-[var(--border-light)] bg-[var(--input-bg)] text-[var(--text-primary)] cursor-pointer flex items-center justify-center font-bold transition-all hover:bg-[var(--bg-tertiary)] hover:scale-[1.1]"
+                  aria-label="Close dialog"
+                >
+                  <X size={14} />
+                </button>
+
+                <h2 className="font-serif text-2xl font-normal text-center mt-3 mb-2 text-[var(--text-primary)]">
+                  Welcome to Infinity Health.
+                </h2>
+                <p className="text-center text-xs text-[var(--text-secondary)] mb-6">
+                  A quiet space, just for you. Sign in to proceed.
+                </p>
+
+                {/* GOOGLE SIGN IN ON TOP */}
+                <button
+                  onClick={() => signIn('google')}
+                  className="w-full font-sans font-semibold py-3 px-4 rounded-[12px] bg-[var(--input-bg)] border border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] hover:scale-[1.02] hover:border-[oklch(0.65_0.05_220)] hover:shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 mb-4"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                  </svg>
+                  <span>Sign in with Google</span>
+                </button>
+
+                <div className="divider-text flex items-center justify-between gap-3 text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)] mb-4">
+                  <span className="h-px flex-1 bg-[var(--border-light)]" />
+                  <span>or continue with email</span>
+                  <span className="h-px flex-1 bg-[var(--border-light)]" />
+                </div>
+
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div>
+                    <label htmlFor="email" className="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+                      Email
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full font-sans rounded-[12px] px-4 py-3 text-sm form-input"
+                      placeholder="user@example.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="password" className="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full font-sans rounded-[12px] px-4 py-3 text-sm pr-11 form-input"
+                        placeholder="••••••••"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {authError && (
+                    <p className="text-xs text-[var(--error)] font-medium m-0">{authError}</p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loggingIn}
+                    className="w-full font-sans font-semibold py-3 px-4 rounded-[12px] bg-[var(--accent-healing)] text-white hover:opacity-95 hover:scale-[1.02] hover:shadow-[0_4px_12px_oklch(0.72_0.04_150_/_0.25)] active:scale-[0.97] transition-all flex items-center justify-center gap-2"
+                  >
+                    {loggingIn ? (
+                      <>
+                        <div className="w-4 h-4 rounded-full border border-white border-t-transparent animate-spin" />
+                        <span>Entering...</span>
+                      </>
+                    ) : (
+                      'Enter Sanctuary'
+                    )}
+                  </button>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }

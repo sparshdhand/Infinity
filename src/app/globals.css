@@ -47,6 +47,13 @@
   --sidebar-item-hover: var(--bg-tertiary);
   --sidebar-item-active: color-mix(in oklch, var(--accent-healing) 8%, var(--bg-tertiary));
   --sidebar-item-active-border: var(--accent-healing);
+
+  /* Onboarding page variables */
+  --orb-opacity: 0.38;
+  --card-bg: oklch(0.99 0.005 80 / 0.65);
+  --chat-bar-bg: oklch(0.97 0.006 78 / 0.7);
+  --input-bg: oklch(0.97 0.006 78);
+  --chip-bg: oklch(0.97 0.006 78 / 0.7);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -86,6 +93,13 @@
     --sidebar-item-hover: var(--bg-tertiary);
     --sidebar-item-active: color-mix(in oklch, var(--accent-healing) 15%, var(--bg-tertiary));
     --sidebar-item-active-border: var(--accent-healing);
+
+    /* Onboarding page variables */
+    --orb-opacity: 0.48;
+    --card-bg: oklch(0.18 0.008 265 / 0.65);
+    --chat-bar-bg: oklch(0.18 0.008 265 / 0.7);
+    --input-bg: oklch(0.13 0.006 270);
+    --chip-bg: oklch(0.18 0.008 265 / 0.7);
   }
 }
 
@@ -229,3 +243,61 @@ button:active, [role="button"]:active, .sidebar-item:active {
   border: 1px solid var(--border-light);
   border-radius: 18px 18px 18px 4px;
 }
+
+/* Redesigned Onboarding Landing & Modal Styles */
+.orb {
+  animation: float-around 25s infinite ease-in-out alternate;
+}
+
+@keyframes float-around {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(80px, -60px) scale(1.15);
+  }
+  100% {
+    transform: translate(-40px, 40px) scale(0.9);
+  }
+}
+
+.login-card {
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+
+.close-card-btn {
+  transition: all 0.2s ease;
+}
+
+.close-card-btn:hover {
+  transform: scale(1.1);
+}
+
+.form-input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: var(--accent-healing);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 4px 12px oklch(0.72 0.04 150 / 0.08),
+    0 0 0 4px oklch(0.72 0.04 150 / 0.15);
+  outline: none;
+}
+
+.divider-text {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
+
