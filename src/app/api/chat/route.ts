@@ -147,6 +147,12 @@ Your answers MUST strictly adhere to the following rules:
       },
     });
 
+    // Update session timestamp so it floats to the top of list
+    await prisma.session.update({
+      where: { id: chatSession.id },
+      data: { updatedAt: new Date() },
+    });
+
     return NextResponse.json({
       sessionId: chatSession.id,
       content: assistantResponse,
@@ -154,6 +160,83 @@ Your answers MUST strictly adhere to the following rules:
     });
   } catch (error: any) {
     console.error('Error in chat API route:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || !(session.user as any).id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = (session.user as any).id;
+
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get('sessionId');
+
+    if (sessionId) {
+      const chatSession = await prisma.session.findUnique({
+        where: { id: sessionId },
+      });
+      if (!chatSession) {
+        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      }
+      if (chatSession.userId !== userId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+
+      const messages = await prisma.message.findMany({
+        where: { sessionId },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      return NextResponse.json({ messages });
+    } else {
+      const sessions = await prisma.session.findMany({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+      });
+      return NextResponse.json({ sessions });
+    }
+  } catch (error: any) {
+    console.error('Error in chat GET route:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || !(session.user as any).id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const userId = (session.user as any).id;
+
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get('sessionId');
+
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
+    }
+
+    const chatSession = await prisma.session.findUnique({
+      where: { id: sessionId },
+    });
+    if (!chatSession) {
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    }
+    if (chatSession.userId !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await prisma.session.delete({
+      where: { id: sessionId },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error in chat DELETE route:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

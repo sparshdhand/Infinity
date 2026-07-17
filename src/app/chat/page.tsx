@@ -2,33 +2,88 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { signIn, signOut } from 'next-auth/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  PaperPlaneRight, 
+  Plus, 
+  Trash, 
+  SignOut, 
+  Wind, 
+  Eye, 
+  EyeSlash, 
+  List, 
+  X, 
+  ChatTeardrop 
+} from '@phosphor-icons/react';
 import BreathingCircle from '@/components/BreathingCircle';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  createdAt?: string;
+}
+
+interface SessionPreview {
+  id: string;
+  triageDate: string;
+  diagnoses: string[];
+  severity: string | null;
+  updatedAt: string;
 }
 
 export default function ChatPage() {
+  // Session & Authentication
   const [session, setSession] = useState<any>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
 
+  // Chat & Sidebar State
+  const [sessions, setSessions] = useState<SessionPreview[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [showBreathing, setShowBreathing] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Check session on mount
+  // Load session on mount
   useEffect(() => {
     fetchSession();
   }, []);
+
+  // When session is found, load the sidebar list of chats
+  useEffect(() => {
+    if (session) {
+      fetchSessionsList();
+    }
+  }, [session]);
+
+  // When active session changes, load messages for that session
+  useEffect(() => {
+    if (activeSessionId) {
+      fetchMessagesForSession(activeSessionId);
+    } else {
+      setMessages([]);
+    }
+  }, [activeSessionId]);
+
+  // Scroll to bottom when messages or loading changes
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, sending]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const fetchSession = async () => {
     try {
@@ -46,9 +101,37 @@ export default function ChatPage() {
     }
   };
 
+  const fetchSessionsList = async () => {
+    try {
+      const res = await fetch('/api/chat');
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions || []);
+      }
+    } catch (err) {
+      console.error('Error fetching sessions:', err);
+    }
+  };
+
+  const fetchMessagesForSession = async (sessId: string) => {
+    setLoadingHistory(true);
+    try {
+      const res = await fetch(`/api/chat?sessionId=${sessId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages || []);
+      }
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    setLoggingIn(true);
     try {
       const res = await signIn('credentials', {
         redirect: false,
@@ -56,36 +139,66 @@ export default function ChatPage() {
         password,
       });
       if (res?.error) {
-        setAuthError('Invalid credentials. Please try again.');
+        setAuthError('We couldn\'t find that account. Check your email and password.');
       } else {
         await fetchSession();
       }
     } catch (err) {
       setAuthError('An unexpected error occurred.');
+    } finally {
+      setLoggingIn(false);
     }
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim() || sending) return;
+  const handleCreateNewChat = () => {
+    setActiveSessionId(null);
+    setMessages([]);
+    setIsSidebarOpen(false);
+  };
 
-    const userMessageContent = inputMessage.trim();
+  const handleDeleteSession = async (sessId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('This conversation and its history will be permanently removed. Proceed?')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/chat?sessionId=${sessId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setSessions(prev => prev.filter(s => s.id !== sessId));
+        if (activeSessionId === sessId) {
+          setActiveSessionId(null);
+          setMessages([]);
+        }
+      }
+    } catch (err) {
+      console.error('Error deleting session:', err);
+    }
+  };
+
+  const handleSendMessage = async (e?: React.FormEvent, customText?: string) => {
+    e?.preventDefault();
+    const textToSend = customText || inputMessage.trim();
+    if (!textToSend || sending) return;
+
     setInputMessage('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setSending(true);
 
     const temporaryUserMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: userMessageContent,
+      content: textToSend,
     };
 
-    setMessages((prev) => [...prev, temporaryUserMessage]);
+    setMessages(prev => [...prev, temporaryUserMessage]);
 
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessageContent, sessionId }),
+        body: JSON.stringify({ message: textToSend, sessionId: activeSessionId }),
       });
 
       if (!response.ok) {
@@ -93,8 +206,11 @@ export default function ChatPage() {
       }
 
       const data = await response.json();
-      if (data.sessionId) {
-        setSessionId(data.sessionId);
+      
+      // If we started a new session, update lists and set active ID
+      if (data.sessionId && activeSessionId !== data.sessionId) {
+        setActiveSessionId(data.sessionId);
+        fetchSessionsList();
       }
 
       const assistantMessage: Message = {
@@ -103,14 +219,14 @@ export default function ChatPage() {
         content: data.content,
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
 
       if (data.isCrisis) {
         setShowBreathing(true);
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
@@ -123,14 +239,48 @@ export default function ChatPage() {
     }
   };
 
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, sending]);
+  // Auto-grow input text area
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputMessage(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  };
 
-  // Format responses to preserve double-spaced bullet lists
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  // Grouping sessions for the sidebar
+  const getGroupedSessions = () => {
+    const today: SessionPreview[] = [];
+    const yesterday: SessionPreview[] = [];
+    const older: SessionPreview[] = [];
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterdayStart = todayStart - 24 * 60 * 60 * 1000;
+
+    sessions.forEach(sess => {
+      const time = new Date(sess.updatedAt || sess.triageDate).getTime();
+      if (time >= todayStart) {
+        today.push(sess);
+      } else if (time >= yesterdayStart) {
+        yesterday.push(sess);
+      } else {
+        older.push(sess);
+      }
+    });
+
+    return { today, yesterday, older };
+  };
+
+  // Helper formatting for custom double-spaced bullet lists
   const formatMessageContent = (content: string) => {
-    // Split by newlines
     const lines = content.split('\n');
     return (
       <div className="space-y-4">
@@ -138,12 +288,9 @@ export default function ChatPage() {
           const trimmed = line.trim();
           if (!trimmed) return null;
 
-          // Check if it is a bullet line (starts with * or -)
           if (trimmed.startsWith('*') || trimmed.startsWith('-')) {
-            // Remove the bullet character and format bold tags
             let cleanText = trimmed.replace(/^[\*\-\s]+/, '');
             
-            // Basic bold markdown parser **text** -> <strong>text</strong>
             const parts = [];
             let lastIndex = 0;
             const regex = /\*\*(.*?)\*\*/g;
@@ -153,7 +300,11 @@ export default function ChatPage() {
               if (match.index > lastIndex) {
                 parts.push(cleanText.substring(lastIndex, match.index));
               }
-              parts.push(<strong key={match.index} className="font-semibold text-[var(--text-primary)]">{match[1]}</strong>);
+              parts.push(
+                <strong key={match.index} className="font-semibold text-[var(--text-primary)]">
+                  {match[1]}
+                </strong>
+              );
               lastIndex = regex.lastIndex;
             }
             
@@ -170,7 +321,6 @@ export default function ChatPage() {
             );
           }
 
-          // Otherwise return as standard text block
           return (
             <p key={idx} className="leading-relaxed">
               {trimmed}
@@ -184,174 +334,403 @@ export default function ChatPage() {
   if (loadingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
-        <p className="font-sans text-[var(--text-secondary)] animate-pulse">Entering Sanctuary...</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-full border-2 border-[var(--accent-healing)] border-t-transparent animate-spin" />
+          <p className="font-sans text-[var(--text-secondary)] animate-pulse text-sm">Entering Sanctuary...</p>
+        </div>
       </div>
     );
   }
 
+  // Not Logged In -> Split Screen Login Page
   if (!session) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4 py-12">
-        <div className="glass-panel w-full max-w-md p-8 rounded-[24px] border border-[var(--border-light)] shadow-elevated">
-          <h2 className="font-serif text-3xl font-semibold mb-6 text-center text-[var(--text-primary)]">
-            Welcome to Infinity
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)] mb-8 text-center leading-relaxed">
-            Please log in with your credentials to access the mental health companion.
-          </p>
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full font-sans bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-[16px] px-4 py-3 text-sm focus:outline-none focus-visible:outline focus-visible:outline-[var(--accent-healing)] transition-all"
-                placeholder="user@example.com"
-              />
+      <div className="min-h-screen flex bg-[var(--bg-primary)]">
+        {/* Left Side: Editorial Vignette with Pulse Circle */}
+        <div className="hidden md:flex md:w-[55%] flex-col justify-between p-12 bg-[var(--bg-sidebar)] relative overflow-hidden border-r border-[var(--border-light)]">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_45%,rgba(114,204,150,0.08),transparent_70%)] pointer-events-none" />
+          
+          <div className="flex items-center gap-2.5 z-10">
+            <span className="w-3.5 h-3.5 rounded-full bg-[var(--accent-healing)]" />
+            <span className="font-serif text-2xl font-semibold tracking-tight text-[var(--text-primary)]">Infinity</span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center flex-1 z-10">
+            {/* Ambient Breathing animation */}
+            <div className="w-56 h-56 rounded-full bg-gradient-to-tr from-[rgba(114,204,150,0.05)] to-[rgba(114,204,150,0.15)] flex items-center justify-center animate-pulse duration-[8000ms]">
+              <div className="w-36 h-36 rounded-full border border-[var(--accent-healing)] opacity-20 flex items-center justify-center">
+                <span className="font-serif italic text-xs text-[var(--accent-healing)] opacity-60">breathe</span>
+              </div>
             </div>
-            <div>
-              <label htmlFor="password" className="block text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full font-sans bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-[16px] px-4 py-3 text-sm focus:outline-none focus-visible:outline focus-visible:outline-[var(--accent-healing)] transition-all"
-                placeholder="••••••••"
-              />
+            <p className="mt-8 font-serif text-lg font-light text-[var(--text-secondary)] text-center max-w-sm">
+              "Your space of quiet reflection."
+            </p>
+          </div>
+
+          <div className="z-10 text-[11px] text-[var(--text-secondary)] opacity-60">
+            © {new Date().getFullYear()} Infinity Health. Standard encryption active.
+          </div>
+        </div>
+
+        {/* Right Side: Clean Login Form */}
+        <div className="w-full md:w-[45%] flex items-center justify-center p-6 md:p-12">
+          <div className="w-full max-w-[380px]">
+            <h2 className="font-serif text-3xl font-medium tracking-tight mb-2 text-[var(--text-primary)] text-center md:text-left">
+              Welcome back
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-8 text-center md:text-left leading-relaxed">
+              A quiet space, just for you. Sign in to proceed.
+            </p>
+
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div>
+                <label htmlFor="email" className="block text-[13px] font-medium text-[var(--text-secondary)] mb-2">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full font-sans input-inset rounded-[12px] px-4 py-3 text-sm"
+                  placeholder="user@example.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-[13px] font-medium text-[var(--text-secondary)] mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full font-sans input-inset rounded-[12px] px-4 py-3 text-sm pr-11"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {authError && (
+                <p className="text-xs text-[var(--error)] font-medium">{authError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loggingIn}
+                className="w-full font-sans font-semibold py-3 px-4 rounded-[12px] bg-[var(--accent-healing)] text-white hover:opacity-95 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
+              >
+                {loggingIn ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border border-white border-t-transparent animate-spin" />
+                    <span>Entering...</span>
+                  </>
+                ) : (
+                  'Enter Sanctuary'
+                )}
+              </button>
+            </form>
+
+            <div className="mt-8 text-center md:text-left">
+              <a href="#" className="text-xs text-[var(--accent-crisis)] hover:underline font-medium">
+                If you are in immediate crisis, call 988.
+              </a>
             </div>
-            {authError && (
-              <p className="text-xs text-[var(--error)] font-medium text-center">{authError}</p>
-            )}
-            <button
-              type="submit"
-              className="w-full font-sans font-semibold py-3 px-4 rounded-[16px] bg-[var(--accent-healing)] text-white hover:opacity-95 transition-opacity focus-visible:outline focus-visible:outline-[var(--accent-healing)]"
-            >
-              Enter Sanctuary
-            </button>
-          </form>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Grouped conversations preview list
+  const { today, yesterday, older } = getGroupedSessions();
+
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col font-sans">
-      {/* Header */}
-      <header className="glass-panel sticky top-0 z-20 w-full px-6 py-4 flex items-center justify-between border-b border-[var(--border-light)]">
+    <div className="h-screen w-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden font-sans">
+      {/* Header Toolbar */}
+      <header className="glass-panel shrink-0 h-14 px-5 flex items-center justify-between border-b border-[var(--border-light)] z-20">
         <div className="flex items-center gap-3">
-          <span className="w-3.5 h-3.5 rounded-full bg-[var(--accent-healing)] animate-pulse" />
-          <h1 className="font-serif text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-            Infinity
-          </h1>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="md:hidden p-1.5 -ml-1 rounded-[8px] hover:bg-[var(--bg-secondary)]"
+            aria-label="Toggle sidebar list"
+          >
+            <List size={20} />
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-healing)]" />
+            <h1 className="font-serif text-lg font-semibold text-[var(--text-primary)]">
+              Infinity
+            </h1>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setShowBreathing(!showBreathing)}
-            className={`font-sans text-xs font-semibold py-2 px-4 rounded-[16px] border border-[var(--border-light)] transition-all focus-visible:outline focus-visible:outline-[var(--accent-healing)] ${
-              showBreathing ? 'bg-[var(--accent-healing)] text-white' : 'hover:bg-[var(--bg-secondary)]'
+            className={`flex items-center gap-2 font-sans text-xs font-semibold py-1.5 px-3.5 rounded-[8px] border transition-all ${
+              showBreathing 
+                ? 'bg-[var(--accent-healing)] text-white border-transparent' 
+                : 'border-[var(--border-light)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]'
             }`}
-            aria-label={showBreathing ? 'Close breathing simulator' : 'Open breathing simulator'}
           >
-            {showBreathing ? 'Close Breath' : 'Take a Breath'}
+            <Wind size={15} />
+            <span className="hidden sm:inline">{showBreathing ? 'Close Breath' : 'Breathe'}</span>
           </button>
+
           <button
             onClick={() => signOut({ redirect: false }).then(() => fetchSession())}
-            className="font-sans text-xs font-semibold py-2 px-4 rounded-[16px] hover:bg-[var(--bg-secondary)] border border-[var(--border-light)] transition-all focus-visible:outline focus-visible:outline-[var(--accent-healing)]"
-            aria-label="Logout"
+            className="flex items-center gap-1.5 font-sans text-xs font-semibold py-1.5 px-3.5 rounded-[8px] border border-[var(--border-light)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]"
           >
-            Leave
+            <SignOut size={15} />
+            <span className="hidden sm:inline">Sign Out</span>
           </button>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 relative">
-        {/* Chat Interface */}
-        <section className={`flex-1 flex flex-col min-h-[60vh] max-h-[80vh] glass-panel rounded-[24px] border border-[var(--border-light)] p-6 transition-all duration-300 ${
-          showBreathing ? 'md:max-w-[60%]' : 'w-full'
-        }`}>
-          {/* Conversation History */}
-          <div 
-            className="flex-1 overflow-y-auto space-y-6 pr-2 mb-4 scrollbar-thin"
-            aria-live="polite"
-            aria-relevant="additions"
-          >
-            {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                <h3 className="font-serif text-xl font-medium mb-2 text-[var(--text-primary)]">
-                  Welcome to a space of quiet reflection.
-                </h3>
-                <p className="text-sm text-[var(--text-secondary)] max-w-md leading-relaxed">
-                  How are you feeling today? Share your thoughts, anxiety levels, or symptoms, and we will reference safe guidelines to support you.
-                </p>
-              </div>
-            ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col max-w-[85%] ${
-                    msg.role === 'user'
-                      ? 'chat-bubble-user ml-auto p-4 rounded-[24px] rounded-br-[4px]'
-                      : 'chat-bubble-agent mr-auto p-5 rounded-[24px] rounded-bl-[4px] border border-[var(--border-light)]'
-                  }`}
-                >
-                  <span className="text-[10px] uppercase tracking-wider font-semibold mb-2 opacity-60">
-                    {msg.role === 'user' ? 'You' : 'Companion'}
-                  </span>
-                  <div className="text-sm">
-                    {msg.role === 'user' ? msg.content : formatMessageContent(msg.content)}
-                  </div>
-                </div>
-              ))
-            )}
-
-            {sending && (
-              <div className="chat-bubble-agent mr-auto p-5 rounded-[24px] rounded-bl-[4px] border border-[var(--border-light)] flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 rounded-full bg-[var(--text-secondary)] animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            )}
-            <div ref={messagesEndRef} />
+      {/* App Shell Core Layout */}
+      <div className="flex-1 flex relative overflow-hidden">
+        
+        {/* Sidebar Container */}
+        <aside
+          className={`
+            absolute md:static inset-y-0 left-0 w-70 md:w-64 shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-light)] z-30 flex flex-col transition-transform duration-250 ease-out
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}
+        >
+          {/* Sidebar Action */}
+          <div className="p-3 border-b border-[var(--border-light)]">
+            <button
+              onClick={handleCreateNewChat}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-[8px] bg-[var(--bg-tertiary)] hover:bg-[color-mix(in_oklch,var(--accent-healing)_10%,var(--bg-tertiary))] border border-[var(--border-light)] text-sm font-medium text-[var(--text-primary)] transition-colors"
+            >
+              <Plus size={16} />
+              <span>New Conversation</span>
+            </button>
           </div>
 
-          {/* Form Input */}
-          <form onSubmit={handleSendMessage} className="flex gap-3">
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Share what is on your mind..."
-              className="flex-1 font-sans bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-[16px] px-4 py-3 text-sm focus:outline-none focus-visible:outline focus-visible:outline-[var(--accent-healing)] transition-all"
-              disabled={sending}
-              aria-label="Chat input message"
-            />
-            <button
-              type="submit"
-              disabled={sending || !inputMessage.trim()}
-              className="font-sans font-semibold py-3 px-6 rounded-[16px] bg-[var(--accent-healing)] text-white hover:opacity-95 disabled:opacity-50 transition-all focus-visible:outline focus-visible:outline-[var(--accent-healing)]"
-            >
-              Send
-            </button>
-          </form>
-        </section>
+          {/* Conversations Preview List */}
+          <div className="flex-1 overflow-y-auto p-2 space-y-4 scrollbar-thin">
+            {sessions.length === 0 ? (
+              <div className="p-4 text-center text-xs text-[var(--text-secondary)] mt-8">
+                No past conversations.
+              </div>
+            ) : (
+              <>
+                {today.length > 0 && (
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)] px-3 mb-1.5">Today</span>
+                    <div className="space-y-1">
+                      {today.map(s => renderSidebarItem(s))}
+                    </div>
+                  </div>
+                )}
+                {yesterday.length > 0 && (
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)] px-3 mb-1.5">Yesterday</span>
+                    <div className="space-y-1">
+                      {yesterday.map(s => renderSidebarItem(s))}
+                    </div>
+                  </div>
+                )}
+                {older.length > 0 && (
+                  <div>
+                    <span className="block text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)] px-3 mb-1.5">Older</span>
+                    <div className="space-y-1">
+                      {older.map(s => renderSidebarItem(s))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </aside>
 
-        {/* Breathing Circle Side Drawer */}
-        {showBreathing && (
-          <aside className="w-full md:w-[380px] flex-shrink-0 animate-fade-in">
-            <BreathingCircle onClose={() => setShowBreathing(false)} />
-          </aside>
+        {/* Mobile Scrim overlay */}
+        {isSidebarOpen && (
+          <div 
+            onClick={() => setIsSidebarOpen(false)}
+            className="md:hidden absolute inset-0 bg-black/40 backdrop-blur-[1px] z-20"
+          />
         )}
-      </main>
+
+        {/* Main Chat Viewport */}
+        <main className="flex-1 flex flex-col bg-[var(--bg-primary)] overflow-hidden relative">
+          
+          {/* Message Area */}
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin">
+            {loadingHistory ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-6 h-6 rounded-full border-2 border-[var(--accent-healing)] border-t-transparent animate-spin" />
+                  <span className="text-xs text-[var(--text-secondary)]">Loading conversation...</span>
+                </div>
+              </div>
+            ) : messages.length === 0 ? (
+              // Empty State with suggest options
+              <div className="h-full max-w-[600px] mx-auto flex flex-col items-center justify-center text-center px-4">
+                <div className="w-12 h-12 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-light)] flex items-center justify-center mb-6">
+                  <ChatTeardrop size={22} className="text-[var(--accent-healing)]" />
+                </div>
+                <h3 className="font-serif text-2xl font-normal mb-3 text-[var(--text-primary)]">
+                  What's on your mind?
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)] max-w-sm leading-relaxed mb-8">
+                  Share your thoughts, symptoms, or symptoms of anxiety. Safe medical references will guide our support.
+                </p>
+
+                <div className="flex flex-wrap justify-center gap-2.5">
+                  <button 
+                    onClick={() => handleSendMessage(undefined, "I am feeling anxious")}
+                    className="text-xs font-semibold py-2 px-4 rounded-[8px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-light)] text-[var(--text-primary)] transition-colors"
+                  >
+                    I'm feeling anxious
+                  </button>
+                  <button 
+                    onClick={() => handleSendMessage(undefined, "I need to talk to someone")}
+                    className="text-xs font-semibold py-2 px-4 rounded-[8px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-light)] text-[var(--text-primary)] transition-colors"
+                  >
+                    I need to talk
+                  </button>
+                  <button 
+                    onClick={() => handleSendMessage(undefined, "Help me sleep")}
+                    className="text-xs font-semibold py-2 px-4 rounded-[8px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-light)] text-[var(--text-primary)] transition-colors"
+                  >
+                    Help me sleep
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // Active Conversation Thread
+              <div className="max-w-[700px] mx-auto space-y-4">
+                {messages.map((msg, index) => {
+                  const isUser = msg.role === 'user';
+                  return (
+                    <motion.div
+                      key={msg.id}
+                      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
+                      className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] p-4 shadow-sm ${
+                          isUser ? 'chat-bubble-user' : 'chat-bubble-agent'
+                        }`}
+                      >
+                        <div className="text-sm">
+                          {isUser ? msg.content : formatMessageContent(msg.content)}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+
+                {sending && (
+                  <div className="flex justify-start">
+                    <div className="chat-bubble-agent p-4 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)] dot-pulse" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)] dot-pulse" style={{ animationDelay: '200ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-secondary)] dot-pulse" style={{ animationDelay: '400ms' }} />
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Sticky Bottom Input Bar */}
+          <div className="shrink-0 border-t border-[var(--border-light)] px-4 py-3 bg-[var(--bg-primary)] z-10">
+            <form onSubmit={(e) => handleSendMessage(e)} className="max-w-[700px] mx-auto flex items-end gap-3">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={inputMessage}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Share what is on your mind..."
+                className="flex-1 font-sans bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-[12px] px-4 py-3 text-sm focus:outline-none focus:border-[var(--accent-healing)] transition-colors min-h-[44px] max-h-[120px] resize-none overflow-y-auto"
+                disabled={sending}
+              />
+              <button
+                type="submit"
+                disabled={sending || !inputMessage.trim()}
+                className="shrink-0 w-11 h-11 rounded-full bg-[var(--accent-healing)] text-white hover:opacity-95 disabled:opacity-40 flex items-center justify-center transition-all focus:outline-none"
+              >
+                <PaperPlaneRight size={18} weight="bold" />
+              </button>
+            </form>
+          </div>
+        </main>
+
+        {/* Breathing Circle Side Overlay Panel */}
+        <AnimatePresence>
+          {showBreathing && (
+            <motion.aside
+              initial={{ opacity: 0, x: '100%' }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: '100%' }}
+              transition={{ type: 'spring', bounce: 0, duration: 0.35 }}
+              className="absolute md:static inset-y-0 right-0 w-full md:w-[380px] shrink-0 z-40 bg-[var(--bg-sidebar)] border-l border-[var(--border-light)] p-6"
+            >
+              <BreathingCircle onClose={() => setShowBreathing(false)} />
+            </motion.aside>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
+
+  // Helper rendering for sidebar conversation items
+  function renderSidebarItem(sess: SessionPreview) {
+    const isActive = activeSessionId === sess.id;
+    const desc = sess.diagnoses && sess.diagnoses.length > 0 
+      ? sess.diagnoses.join(', ') 
+      : 'Copied session';
+
+    return (
+      <div
+        key={sess.id}
+        onClick={() => {
+          setActiveSessionId(sess.id);
+          setIsSidebarOpen(false);
+        }}
+        className={`sidebar-item flex items-center justify-between p-3 rounded-[8px] cursor-pointer ${
+          isActive 
+            ? 'bg-[var(--sidebar-item-active)] border-l-2 border-[var(--sidebar-item-active-border)]' 
+            : 'hover:bg-[var(--sidebar-item-hover)]'
+        }`}
+      >
+        <div className="flex-1 min-w-0 pr-2">
+          <span className="block text-xs font-semibold text-[var(--text-primary)] truncate">
+            {desc}
+          </span>
+          <span className="block text-[10px] text-[var(--text-secondary)] mt-1">
+            {new Date(sess.updatedAt || sess.triageDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        <button
+          onClick={(e) => handleDeleteSession(sess.id, e)}
+          className="p-1 rounded-[4px] text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--bg-secondary)]"
+          aria-label="Delete chat conversation"
+        >
+          <Trash size={14} />
+        </button>
+      </div>
+    );
+  }
 }
