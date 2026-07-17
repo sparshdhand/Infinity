@@ -14,8 +14,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata = {
-  title: 'Infinity - Mental Health Sanctuary',
-  description: 'An organic, RAG-backed mental health conversational companion.',
+  title: 'Infinity Health — Your Mental Health Sanctuary',
+  description: 'Infinity Health is a non-clinical mental health sanctuary designed to help you triage anxiety, panic, and burnout with structured guidance and breathing aids.',
 };
 
 export default function RootLayout({

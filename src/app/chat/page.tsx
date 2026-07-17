@@ -15,7 +15,9 @@ import {
   X, 
   ChatTeardrop,
   ShieldCheck,
-  Sparkle
+  Sparkle,
+  ArrowRight,
+  Heartbeat
 } from '@phosphor-icons/react';
 import BreathingCircle from '@/components/BreathingCircle';
 
@@ -460,9 +462,11 @@ export default function ChatPage() {
 
         {/* Sticky Header Nav */}
         <nav className="sticky top-0 flex justify-between items-center px-6 md:px-12 py-4 border-b border-[var(--border-light)] z-20 bg-[var(--card-bg)] backdrop-blur-md">
-          <div className="flex items-center gap-2 font-serif text-xl font-semibold text-[var(--text-primary)]">
-            <span className="w-3.5 h-3.5 rounded-full bg-[var(--accent-healing)]" />
-            <span>Infinity</span>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[var(--accent-healing)] overflow-hidden shrink-0">
+              <img src="/leaf-logo.png" alt="Infinity Health leaf logo" className="w-5 h-5 object-contain" />
+            </span>
+            <span className="font-serif text-xl font-light tracking-tight text-[var(--text-primary)]">Infinity Health</span>
           </div>
           <div className="flex items-center gap-6">
             <a href="#prompts" className="hidden sm:inline text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Prompts</a>
@@ -486,7 +490,7 @@ export default function ChatPage() {
               Your space of quiet reflection.
             </h1>
             <p className="text-base md:text-lg leading-relaxed text-[var(--text-secondary)] mb-10 max-w-[560px] mx-auto">
-              Infinity is an organic non-clinical mental health sanctuary designed to help you triage anxiety, panic, and burnout using structured guidance and breathing aids.
+              Infinity Health is a non-clinical mental health sanctuary designed to help you triage anxiety, panic, and burnout using structured guidance and breathing aids.
             </p>
             <button 
               onClick={() => setShowLoginModal(true)} 
@@ -668,9 +672,14 @@ export default function ChatPage() {
                   <X size={14} />
                 </button>
 
-                <h2 className="font-serif text-2xl font-normal text-center mt-3 mb-2 text-[var(--text-primary)]">
-                  Welcome to Infinity Health.
-                </h2>
+                <div className="flex flex-col items-center mt-3 mb-2">
+                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-[var(--accent-healing)] overflow-hidden mb-3">
+                    <img src="/leaf-logo.png" alt="Infinity Health" className="w-6 h-6 object-contain" />
+                  </span>
+                  <h2 className="font-serif text-2xl font-normal text-center text-[var(--text-primary)]">
+                    Welcome to Infinity Health.
+                  </h2>
+                </div>
                 <p className="text-center text-xs text-[var(--text-secondary)] mb-6">
                   A quiet space, just for you. Sign in to proceed.
                 </p>
@@ -768,43 +777,49 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden font-sans">
-      {/* Header Toolbar */}
-      <header className="glass-panel shrink-0 h-14 px-5 flex items-center justify-between border-b border-[var(--border-light)] z-20">
+      {/* Header Toolbar — rich glassmorphic bar */}
+      <header className="shrink-0 h-14 px-5 flex items-center justify-between border-b border-[var(--border-light)] z-20 bg-[var(--card-bg)] backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="md:hidden p-1.5 -ml-1 rounded-[8px] hover:bg-[var(--bg-secondary)]"
+            className="md:hidden p-1.5 -ml-1 rounded-[8px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
             aria-label="Toggle sidebar list"
           >
             <List size={20} />
           </button>
           
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-healing)]" />
-            <h1 className="font-serif text-lg font-semibold text-[var(--text-primary)]">
-              Infinity
+          {/* Brand mark with real leaf logo */}
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex items-center justify-center w-8 h-8 rounded-full bg-[var(--accent-healing)] overflow-hidden shrink-0">
+              <img src="/leaf-logo.png" alt="Infinity Health" className="w-5 h-5 object-contain" />
+              {/* Live status dot */}
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[oklch(0.85_0.12_150)] border-2 border-[var(--bg-primary)] animate-pulse" />
+            </span>
+            <h1 className="font-serif text-lg font-light tracking-tight text-[var(--text-primary)]">
+              Infinity Health
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Right controls */}
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setShowBreathing(!showBreathing)}
-            className={`flex items-center gap-2 font-sans text-xs font-semibold py-1.5 px-3.5 rounded-[8px] border transition-all ${
+            className={`flex items-center gap-2 font-sans text-xs font-semibold py-1.5 px-3.5 rounded-full border transition-all ${
               showBreathing 
-                ? 'bg-[var(--accent-healing)] text-white border-transparent' 
-                : 'border-[var(--border-light)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]'
+                ? 'bg-[var(--accent-healing)] text-white border-transparent shadow-[0_2px_8px_oklch(0.72_0.04_150_/_0.3)]' 
+                : 'border-[var(--border-light)] hover:border-[var(--accent-healing)] hover:bg-[color-mix(in_oklch,var(--accent-healing)_8%,var(--bg-secondary))] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <Wind size={15} />
+            <Wind size={14} />
             <span className="hidden sm:inline">{showBreathing ? 'Close Breath' : 'Breathe'}</span>
           </button>
 
           <button
             onClick={() => signOut({ redirect: false }).then(() => fetchSession())}
-            className="flex items-center gap-1.5 font-sans text-xs font-semibold py-1.5 px-3.5 rounded-[8px] border border-[var(--border-light)] hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]"
+            className="flex items-center gap-1.5 font-sans text-xs font-medium py-1.5 px-3.5 rounded-full border border-[var(--border-light)] hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
           >
-            <SignOut size={15} />
+            <SignOut size={14} />
             <span className="hidden sm:inline">Sign Out</span>
           </button>
         </div>
@@ -813,52 +828,73 @@ export default function ChatPage() {
       {/* App Shell Core Layout */}
       <div className="flex-1 flex relative overflow-hidden">
         
-        {/* Sidebar Container */}
+        {/* Sidebar Container — ambient depth panel */}
         <aside
           className={`
-            absolute md:static inset-y-0 left-0 w-70 md:w-64 shrink-0 bg-[var(--bg-sidebar)] border-r border-[var(--border-light)] z-30 flex flex-col transition-transform duration-250 ease-out
+            absolute md:static inset-y-0 left-0 w-72 md:w-64 shrink-0 z-30 flex flex-col transition-transform duration-300 ease-out overflow-hidden
+            bg-[var(--bg-sidebar)] border-r border-[var(--border-light)]
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
           `}
         >
-          {/* Sidebar Action */}
-          <div className="p-3 border-b border-[var(--border-light)]">
+          {/* Subtle ambient orb behind sidebar content */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div
+              className="absolute rounded-full blur-[60px]"
+              style={{
+                width: 220,
+                height: 220,
+                background: 'var(--accent-healing)',
+                opacity: 0.06,
+                top: '-30px',
+                left: '-40px',
+              }}
+            />
+          </div>
+
+          {/* Sidebar Header with New Chat */}
+          <div className="relative p-3 border-b border-[var(--border-light)]">
             <button
               onClick={handleCreateNewChat}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-[8px] bg-[var(--bg-tertiary)] hover:bg-[color-mix(in_oklch,var(--accent-healing)_10%,var(--bg-tertiary))] border border-[var(--border-light)] text-sm font-medium text-[var(--text-primary)] transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-[10px] bg-[color-mix(in_oklch,var(--accent-healing)_10%,var(--bg-secondary))] hover:bg-[color-mix(in_oklch,var(--accent-healing)_18%,var(--bg-secondary))] text-sm font-semibold text-[var(--text-healing)] transition-all duration-150 active:scale-[0.97]"
             >
-              <Plus size={16} />
-              <span>New Conversation</span>
+              <Plus size={15} weight="bold" />
+              <span>New Chat</span>
             </button>
           </div>
 
           {/* Conversations Preview List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-4 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto p-2 space-y-4 scrollbar-thin relative">
             {sessions.length === 0 ? (
-              <div className="p-4 text-center text-xs text-[var(--text-secondary)] mt-8">
-                No past conversations.
+              <div className="flex flex-col items-center justify-center gap-3 mt-12 px-4 text-center">
+                <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-light)] flex items-center justify-center">
+                  <ChatTeardrop size={18} className="text-[var(--accent-healing)] opacity-60" />
+                </div>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  Your conversations will appear here once you start chatting.
+                </p>
               </div>
             ) : (
               <>
                 {today.length > 0 && (
                   <div>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)] px-3 mb-1.5">Today</span>
-                    <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-[var(--text-secondary)] px-3 mb-2 opacity-50">Today</span>
+                    <div className="space-y-0.5">
                       {today.map(s => renderSidebarItem(s))}
                     </div>
                   </div>
                 )}
                 {yesterday.length > 0 && (
                   <div>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)] px-3 mb-1.5">Yesterday</span>
-                    <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-[var(--text-secondary)] px-3 mb-2 opacity-50">Yesterday</span>
+                    <div className="space-y-0.5">
                       {yesterday.map(s => renderSidebarItem(s))}
                     </div>
                   </div>
                 )}
                 {older.length > 0 && (
                   <div>
-                    <span className="block text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)] px-3 mb-1.5">Older</span>
-                    <div className="space-y-1">
+                    <span className="block text-[10px] uppercase font-bold tracking-widest text-[var(--text-secondary)] px-3 mb-2 opacity-50">Earlier</span>
+                    <div className="space-y-0.5">
                       {older.map(s => renderSidebarItem(s))}
                     </div>
                   </div>
@@ -866,6 +902,27 @@ export default function ChatPage() {
               </>
             )}
           </div>
+
+          {/* Sidebar Footer — user info strip */}
+          {session?.user && (
+            <div className="shrink-0 border-t border-[var(--border-light)] p-3">
+              <div className="flex items-center gap-2.5 px-1">
+                <div className="w-7 h-7 rounded-full bg-[color-mix(in_oklch,var(--accent-healing)_20%,var(--bg-tertiary))] border border-[color-mix(in_oklch,var(--accent-healing)_30%,var(--border-light))] flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-bold text-[var(--text-healing)] uppercase">
+                    {(session.user.name || session.user.email || 'U')[0]}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                    {session.user.name || session.user.email?.split('@')[0] || 'User'}
+                  </p>
+                  <p className="text-[10px] text-[var(--text-secondary)] truncate">
+                    {session.user.email || ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </aside>
 
         {/* Mobile Scrim overlay */}
@@ -880,46 +937,52 @@ export default function ChatPage() {
         <main className="flex-1 flex flex-col bg-[var(--bg-primary)] overflow-hidden relative">
           
           {/* Message Area */}
-          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin relative">
             {loadingHistory ? (
               <div className="h-full flex items-center justify-center">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-6 h-6 rounded-full border-2 border-[var(--accent-healing)] border-t-transparent animate-spin" />
-                  <span className="text-xs text-[var(--text-secondary)]">Loading conversation...</span>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="relative w-10 h-10">
+                    <div className="absolute inset-0 rounded-full border-2 border-[var(--accent-healing)] border-t-transparent animate-spin" />
+                    <div className="absolute inset-2 rounded-full bg-[color-mix(in_oklch,var(--accent-healing)_12%,var(--bg-primary))]" />
+                  </div>
+                  <span className="text-xs text-[var(--text-secondary)] animate-pulse">Loading conversation...</span>
                 </div>
               </div>
             ) : messages.length === 0 ? (
-              // Empty State with suggest options
-              <div className="h-full max-w-[600px] mx-auto flex flex-col items-center justify-center text-center px-4">
-                <div className="w-12 h-12 rounded-full bg-[var(--bg-secondary)] border border-[var(--border-light)] flex items-center justify-center mb-6">
-                  <ChatTeardrop size={22} className="text-[var(--accent-healing)]" />
+              // Premium Empty State
+              <div className="h-full max-w-[560px] mx-auto flex flex-col items-center justify-center text-center px-4">
+                {/* Halo ring icon */}
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 rounded-full bg-[var(--accent-healing)] blur-[24px] opacity-20 scale-150" />
+                  <div className="relative w-16 h-16 rounded-full bg-[color-mix(in_oklch,var(--accent-healing)_10%,var(--bg-secondary))] border border-[color-mix(in_oklch,var(--accent-healing)_30%,var(--border-light))] flex items-center justify-center shadow-[0_0_0_8px_color-mix(in_oklch,var(--accent-healing)_5%,var(--bg-primary))]">
+                    <Heartbeat size={26} weight="light" className="text-[var(--accent-healing)]" />
+                  </div>
                 </div>
-                <h3 className="font-serif text-2xl font-normal mb-3 text-[var(--text-primary)]">
+
+                <h3 className="font-serif text-3xl font-light tracking-tight mb-3 text-[var(--text-primary)]">
                   What's on your mind?
                 </h3>
-                <p className="text-sm text-[var(--text-secondary)] max-w-sm leading-relaxed mb-8">
-                  Share your thoughts, symptoms, or symptoms of anxiety. Safe medical references will guide our support.
+                <p className="text-sm text-[var(--text-secondary)] max-w-xs leading-relaxed mb-10">
+                  Share a thought, feeling, or worry. Infinity listens without judgment and guides with care.
                 </p>
 
-                <div className="flex flex-wrap justify-center gap-2.5">
-                  <button 
-                    onClick={() => handleSendMessage(undefined, "I am feeling anxious")}
-                    className="text-xs font-semibold py-2 px-4 rounded-[8px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-light)] text-[var(--text-primary)] transition-colors"
-                  >
-                    I'm feeling anxious
-                  </button>
-                  <button 
-                    onClick={() => handleSendMessage(undefined, "I need to talk to someone")}
-                    className="text-xs font-semibold py-2 px-4 rounded-[8px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-light)] text-[var(--text-primary)] transition-colors"
-                  >
-                    I need to talk
-                  </button>
-                  <button 
-                    onClick={() => handleSendMessage(undefined, "Help me sleep")}
-                    className="text-xs font-semibold py-2 px-4 rounded-[8px] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-light)] text-[var(--text-primary)] transition-colors"
-                  >
-                    Help me sleep
-                  </button>
+                {/* Suggestion chips — pill style matching onboarding */}
+                <div className="flex flex-wrap justify-center gap-2">
+                  {[
+                    { label: "I'm feeling anxious", prompt: "I am feeling anxious" },
+                    { label: "I need to talk", prompt: "I need to talk to someone" },
+                    { label: "Help me breathe", prompt: "Guide me through a breathing exercise" },
+                    { label: "I can't sleep", prompt: "Help me sleep" },
+                  ].map(({ label, prompt }) => (
+                    <button
+                      key={label}
+                      onClick={() => handleSendMessage(undefined, prompt)}
+                      className="flex items-center gap-1.5 text-xs font-semibold py-2 px-4 rounded-full bg-[var(--card-bg)] hover:bg-[color-mix(in_oklch,var(--accent-healing)_8%,var(--bg-secondary))] border border-[var(--border-light)] hover:border-[color-mix(in_oklch,var(--accent-healing)_40%,var(--border-light))] text-[var(--text-primary)] transition-all hover:-translate-y-0.5 hover:shadow-sm backdrop-blur-md"
+                    >
+                      <ArrowRight size={12} className="text-[var(--accent-healing)] opacity-70" />
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : (
@@ -962,9 +1025,9 @@ export default function ChatPage() {
             )}
           </div>
 
-          {/* Sticky Bottom Input Bar */}
-          <div className="shrink-0 border-t border-[var(--border-light)] px-4 py-3 bg-[var(--bg-primary)] z-10">
-            <form onSubmit={(e) => handleSendMessage(e)} className="max-w-[700px] mx-auto flex items-end gap-3">
+          {/* Sticky Bottom Input Bar — glassmorphic style matching onboarding */}
+          <div className="shrink-0 px-4 py-4 z-10 bg-gradient-to-t from-[var(--bg-primary)] via-[var(--bg-primary)] to-transparent">
+            <form onSubmit={(e) => handleSendMessage(e)} className="max-w-[700px] mx-auto flex items-end gap-3 bg-[var(--chat-bar-bg)] border border-[var(--border-light)] rounded-[24px] p-2 shadow-sm backdrop-blur-md transition-shadow focus-within:shadow-[0_0_0_3px_oklch(0.72_0.04_150_/_0.12)] focus-within:border-[color-mix(in_oklch,var(--accent-healing)_40%,var(--border-light))]">
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -972,15 +1035,15 @@ export default function ChatPage() {
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Share what is on your mind..."
-                className="flex-1 font-sans bg-[var(--bg-secondary)] border border-[var(--border-light)] rounded-[12px] px-4 py-3 text-sm focus:outline-none focus:border-[var(--accent-healing)] transition-colors min-h-[44px] max-h-[120px] resize-none overflow-y-auto"
+                className="flex-1 font-sans bg-transparent border-none px-3 py-3 text-sm focus:outline-none text-[var(--text-primary)] placeholder-[var(--text-secondary)] min-h-[44px] max-h-[120px] resize-none overflow-y-auto"
                 disabled={sending}
               />
               <button
                 type="submit"
                 disabled={sending || !inputMessage.trim()}
-                className="shrink-0 w-11 h-11 rounded-full bg-[var(--accent-healing)] text-white hover:opacity-95 disabled:opacity-40 flex items-center justify-center transition-all focus:outline-none"
+                className="shrink-0 w-10 h-10 rounded-full bg-[var(--accent-healing)] text-white hover:opacity-95 disabled:opacity-35 disabled:cursor-not-allowed flex items-center justify-center transition-all focus:outline-none hover:shadow-[0_4px_12px_oklch(0.72_0.04_150_/_0.3)] hover:scale-[1.05] active:scale-[0.95]"
               >
-                <PaperPlaneRight size={18} weight="bold" />
+                <PaperPlaneRight size={17} weight="bold" />
               </button>
             </form>
           </div>
@@ -1016,26 +1079,43 @@ export default function ChatPage() {
           setActiveSessionId(sess.id);
           setIsSidebarOpen(false);
         }}
-        className={`sidebar-item flex items-center justify-between p-3 rounded-[8px] cursor-pointer ${
+        className={`group relative sidebar-item flex items-center gap-2.5 p-2.5 rounded-[10px] cursor-pointer transition-all ${
           isActive 
-            ? 'bg-[var(--sidebar-item-active)] border-l-2 border-[var(--sidebar-item-active-border)]' 
-            : 'hover:bg-[var(--sidebar-item-hover)]'
+            ? 'bg-[color-mix(in_oklch,var(--accent-healing)_12%,var(--bg-secondary))] shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--accent-healing)_25%,transparent)]' 
+            : 'hover:bg-[var(--bg-secondary)]'
         }`}
       >
-        <div className="flex-1 min-w-0 pr-2">
-          <span className="block text-xs font-semibold text-[var(--text-primary)] truncate">
+        {/* Chat icon avatar */}
+        <div className={`shrink-0 w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors ${
+          isActive
+            ? 'bg-[color-mix(in_oklch,var(--accent-healing)_20%,var(--bg-tertiary))]'
+            : 'bg-[var(--bg-tertiary)] group-hover:bg-[color-mix(in_oklch,var(--accent-healing)_10%,var(--bg-tertiary))]'
+        }`}>
+          <ChatTeardrop
+            size={14}
+            weight={isActive ? 'fill' : 'regular'}
+            className={isActive ? 'text-[var(--accent-healing)]' : 'text-[var(--text-secondary)]'}
+          />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <span className={`block text-xs font-semibold truncate transition-colors ${
+            isActive ? 'text-[var(--text-healing)]' : 'text-[var(--text-primary)]'
+          }`}>
             {desc}
           </span>
-          <span className="block text-[10px] text-[var(--text-secondary)] mt-1">
+          <span className="block text-[10px] text-[var(--text-secondary)] mt-0.5 opacity-70">
             {new Date(sess.updatedAt || sess.triageDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
+
+        {/* Delete button — only visible on hover */}
         <button
           onClick={(e) => handleDeleteSession(sess.id, e)}
-          className="p-1 rounded-[4px] text-[var(--text-secondary)] hover:text-[var(--error)] hover:bg-[var(--bg-secondary)]"
+          className="shrink-0 p-1.5 rounded-[6px] text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 hover:text-[var(--error)] hover:bg-[var(--bg-primary)] transition-all"
           aria-label="Delete chat conversation"
         >
-          <Trash size={14} />
+          <Trash size={13} />
         </button>
       </div>
     );
