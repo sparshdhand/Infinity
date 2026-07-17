@@ -95,7 +95,7 @@ async function main() {
         // we use a raw SQL query.
         await prisma.$executeRawUnsafe(
           `INSERT INTO "Guideline" (id, content, metadata, embedding) 
-           VALUES ($1, $2, $3, $4::vector)`,
+           VALUES ($1, $2, $3::jsonb, $4::vector)`,
           id,
           item.content,
           JSON.stringify(item.metadata),
