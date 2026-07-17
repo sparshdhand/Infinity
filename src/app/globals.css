@@ -20,6 +20,7 @@
   
   /* WCAG AA 4.5:1 Compliant Text Color Matches */
   --text-healing: oklch(0.42 0.04 150);      /* Eucalyptus Dark Text */
+  --text-bold: oklch(0.10 0.015 65);         /* Near-black emphatic ink for bold text */
   
   --success: oklch(0.72 0.05 150);
   --error: oklch(0.60 0.10 35);
@@ -73,6 +74,7 @@
     --accent-crisis: oklch(0.58 0.07 45);
     
     --text-healing: oklch(0.85 0.03 150);
+    --text-bold: oklch(0.97 0.004 80);         /* Near-white emphatic ink for bold text in dark mode */
 
     --shadow-ambient: 
       0 4px 20px oklch(0% 0 0 / 0.15),
@@ -333,3 +335,94 @@ button:active, [role="button"]:active, .sidebar-item:active {
 }
 
 
+/* ── Liquid Glass CTA Button ─────────────────────────────────────────── */
+.liquid-glass-btn {
+  /* Frosted glass core */
+  background: oklch(0.72 0.04 150 / 0.18);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+
+  /* Gradient border */
+  border: 1px solid oklch(0.72 0.04 150 / 0.45);
+  box-shadow:
+    0 0 0 1px oklch(0.72 0.04 150 / 0.12),
+    0 8px 32px oklch(0.72 0.04 150 / 0.22),
+    0 2px 8px oklch(0.72 0.04 150 / 0.15),
+    /* Inner top highlight — the "liquid" feel */
+    inset 0 1px 0 oklch(100% 0 0 / 0.35),
+    inset 0 -1px 0 oklch(0.72 0.04 150 / 0.15);
+
+  color: var(--text-healing);
+  transition: transform 200ms cubic-bezier(0.25, 1, 0.5, 1),
+              box-shadow 200ms ease,
+              background 200ms ease;
+}
+
+/* Shimmer sweep pseudo-element */
+.liquid-glass-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    oklch(100% 0 0 / 0.22) 50%,
+    transparent 65%
+  );
+  background-size: 200% 100%;
+  background-position: -100% 0;
+  transition: background-position 0s;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.liquid-glass-btn:hover::before {
+  background-position: 200% 0;
+  transition: background-position 600ms ease;
+}
+
+.liquid-glass-btn:hover {
+  transform: scale(1.03) translateY(-1px);
+  background: oklch(0.72 0.04 150 / 0.25);
+  box-shadow:
+    0 0 0 1px oklch(0.72 0.04 150 / 0.25),
+    0 12px 40px oklch(0.72 0.04 150 / 0.30),
+    0 4px 12px oklch(0.72 0.04 150 / 0.20),
+    inset 0 1px 0 oklch(100% 0 0 / 0.45),
+    inset 0 -1px 0 oklch(0.72 0.04 150 / 0.20);
+}
+
+.liquid-glass-btn:active {
+  transform: scale(0.97);
+  transition-duration: 80ms;
+}
+
+/* Dark mode variant — brighter glass */
+@media (prefers-color-scheme: dark) {
+  .liquid-glass-btn {
+    background: oklch(0.68 0.06 150 / 0.20);
+    border-color: oklch(0.68 0.06 150 / 0.50);
+    color: var(--text-healing);
+    box-shadow:
+      0 0 0 1px oklch(0.68 0.06 150 / 0.15),
+      0 8px 32px oklch(0.68 0.06 150 / 0.25),
+      0 2px 8px oklch(0.68 0.06 150 / 0.18),
+      inset 0 1px 0 oklch(100% 0 0 / 0.15),
+      inset 0 -1px 0 oklch(0.68 0.06 150 / 0.20);
+  }
+  .liquid-glass-btn:hover {
+    background: oklch(0.68 0.06 150 / 0.28);
+    box-shadow:
+      0 0 0 1px oklch(0.68 0.06 150 / 0.30),
+      0 12px 40px oklch(0.68 0.06 150 / 0.35),
+      0 4px 12px oklch(0.68 0.06 150 / 0.25),
+      inset 0 1px 0 oklch(100% 0 0 / 0.22),
+      inset 0 -1px 0 oklch(0.68 0.06 150 / 0.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-btn::before { display: none; }
+  .liquid-glass-btn:hover { transform: none; }
+}

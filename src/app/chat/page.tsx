@@ -323,7 +323,7 @@ export default function ChatPage() {
           boldParts.push(plainText.substring(bLastIndex, bMatch.index));
         }
         boldParts.push(
-          <strong key={`${keyPrefix}-b-${bMatch.index}`} className="font-semibold text-[var(--text-primary)]">
+          <strong key={`${keyPrefix}-b-${bMatch.index}`} className="font-bold tracking-tight" style={{ color: 'var(--text-bold)' }}>
             {bMatch[1]}
           </strong>
         );
@@ -489,14 +489,14 @@ export default function ChatPage() {
             <h1 className="font-serif text-4xl md:text-5xl font-light tracking-tight mb-6 leading-tight text-[var(--text-primary)]">
               Your space of quiet reflection.
             </h1>
-            <p className="text-base md:text-lg leading-relaxed text-[var(--text-secondary)] mb-10 max-w-[560px] mx-auto">
+            <p className="text-base md:text-lg leading-relaxed text-[var(--text-primary)] mb-10 max-w-[560px] mx-auto">
               Infinity Health is a non-clinical mental health sanctuary designed to help you triage anxiety, panic, and burnout using structured guidance and breathing aids.
             </p>
-            <button 
-              onClick={() => setShowLoginModal(true)} 
-              className="font-sans font-semibold py-4 px-9 rounded-full bg-[var(--accent-healing)] text-white hover:opacity-95 hover:scale-[1.03] transition-all hover:shadow-[0_8px_24px_oklch(0.72_0.04_150_/_0.3)] active:scale-[0.97]"
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="liquid-glass-btn font-sans font-semibold py-4 px-9 rounded-full relative overflow-hidden group"
             >
-              Enter Sanctuary
+              <span className="relative z-10">Enter Sanctuary</span>
             </button>
           </section>
 
