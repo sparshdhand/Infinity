@@ -471,35 +471,35 @@ export default function ChatPage() {
           {/* 2. AI Comparison Matrix */}
           <section className="mt-24 scroll-mt-24" id="compare">
             <h2 className="font-serif text-2xl font-normal text-center mb-10 text-[var(--text-primary)]">Infinity vs General AI Models</h2>
-            <div className="bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[24px] overflow-hidden backdrop-blur-md">
-              <table className="w-full border-collapse text-left text-sm">
+            <div className="compare-table-container">
+              <table className="compare-table">
                 <thead>
-                  <tr className="bg-[var(--bg-secondary)]">
-                    <th className="p-4.5 pl-6 font-bold text-[var(--text-primary)] border-b border-[var(--border-light)]">Feature Capability</th>
-                    <th className="p-4.5 font-bold text-[var(--text-primary)] border-b border-[var(--border-light)]">General AI Models</th>
-                    <th className="p-4.5 pr-6 font-bold text-[var(--accent-healing)] border-b border-[var(--border-light)]">Infinity Sanctuary</th>
+                  <tr>
+                    <th>Feature Capability</th>
+                    <th>General AI Models</th>
+                    <th style={{ color: 'var(--accent-healing)' }}>Infinity Sanctuary</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="p-4.5 pl-6 border-b border-[var(--border-light)]"><strong>Triage Flow</strong></td>
-                    <td className="p-4.5 text-[var(--text-secondary)] border-b border-[var(--border-light)]">Generic prompts or alarmist disclaimers.</td>
-                    <td className="p-4.5 pr-6 text-[var(--accent-healing)] font-semibold border-b border-[var(--border-light)]">Verified medical guidelines mapping.</td>
+                    <td><strong>Triage Flow</strong></td>
+                    <td className="text-[var(--text-secondary)]">Generic prompts or alarmist disclaimers.</td>
+                    <td style={{ color: 'var(--accent-healing)', fontWeight: 600 }}>Verified medical guidelines mapping.</td>
                   </tr>
                   <tr>
-                    <td className="p-4.5 pl-6 border-b border-[var(--border-light)]"><strong>Visual Focus</strong></td>
-                    <td className="p-4.5 text-[var(--text-secondary)] border-b border-[var(--border-light)]">Densely formatted text blocks.</td>
-                    <td className="p-4.5 pr-6 text-[var(--accent-healing)] font-semibold border-b border-[var(--border-light)]">Clean, double-spaced narrow bullet lists.</td>
+                    <td><strong>Visual Focus</strong></td>
+                    <td className="text-[var(--text-secondary)]">Densely formatted text blocks.</td>
+                    <td style={{ color: 'var(--accent-healing)', fontWeight: 600 }}>Clean, double-spaced narrow bullet lists.</td>
                   </tr>
                   <tr>
-                    <td className="p-4.5 pl-6 border-b border-[var(--border-light)]"><strong>Breathing Aids</strong></td>
-                    <td className="p-4.5 text-[var(--text-secondary)] border-b border-[var(--border-light)]">Text instructions only.</td>
-                    <td className="p-4.5 pr-6 text-[var(--accent-healing)] font-semibold border-b border-[var(--border-light)]">Interactive visual box breathing circle.</td>
+                    <td><strong>Breathing Aids</strong></td>
+                    <td className="text-[var(--text-secondary)]">Text instructions only.</td>
+                    <td style={{ color: 'var(--accent-healing)', fontWeight: 600 }}>Interactive visual box breathing circle.</td>
                   </tr>
                   <tr>
-                    <td className="p-4.5 pl-6"><strong>Session Privacy</strong></td>
-                    <td className="p-4.5 text-[var(--text-secondary)]">Used for training models.</td>
-                    <td className="p-4.5 pr-6 text-[var(--accent-healing)] font-semibold">Encrypted private JWT session records.</td>
+                    <td><strong>Session Privacy</strong></td>
+                    <td className="text-[var(--text-secondary)]">Used for training models.</td>
+                    <td style={{ color: 'var(--accent-healing)', fontWeight: 600 }}>Encrypted private JWT session records.</td>
                   </tr>
                 </tbody>
               </table>
