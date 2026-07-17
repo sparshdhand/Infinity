@@ -367,7 +367,7 @@ export default function ChatPage() {
   if (!session) {
     return (
       <div 
-        className="min-h-screen w-screen flex flex-col bg-[var(--bg-primary)] overflow-y-auto scroll-smooth relative"
+        className="h-screen w-screen flex flex-col bg-[var(--bg-primary)] overflow-y-auto scroll-smooth relative"
         onMouseMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
