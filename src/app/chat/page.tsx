@@ -13,7 +13,9 @@ import {
   EyeSlash, 
   List, 
   X, 
-  ChatTeardrop 
+  ChatTeardrop,
+  ShieldCheck,
+  Sparkle
 } from '@phosphor-icons/react';
 import BreathingCircle from '@/components/BreathingCircle';
 
@@ -511,17 +513,17 @@ export default function ChatPage() {
             <h2 className="font-serif text-2xl font-normal text-center mb-10 text-[var(--text-primary)]">What We Do Best</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-8 backdrop-blur-md">
-                <span className="text-3xl mb-4 inline-block">🌿</span>
+                <ShieldCheck size={32} className="text-[var(--accent-healing)] mb-4 inline-block" />
                 <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Anxiety Triage</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">Structuring non-clinical support pathways to calm overstimulated autonomic responses.</p>
               </div>
               <div className="text-center bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-8 backdrop-blur-md">
-                <span className="text-3xl mb-4 inline-block">✨</span>
+                <Sparkle size={32} className="text-[var(--accent-healing)] mb-4 inline-block" />
                 <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Tactile Focus</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">Reducing digital glare and cognitive load using highly curated, spacing-heavy typography.</p>
               </div>
               <div className="text-center bg-[var(--card-bg)] border border-[var(--border-light)] rounded-[20px] p-8 backdrop-blur-md">
-                <span className="text-3xl mb-4 inline-block">🫁</span>
+                <Wind size={32} className="text-[var(--accent-healing)] mb-4 inline-block" />
                 <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2.5">Rhythm Reset</h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed m-0">Syncing mental focus through expandable inhale/hold cycles to trigger vagus nerves.</p>
               </div>
