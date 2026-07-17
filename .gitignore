@@ -34,3 +34,9 @@ yarn-error.log*
 
 # backups
 .ai-context/backups/
+
+# AI Context and design files containing confidential info
+.ai-context/
+DESIGN.md
+PROJECT_OVERVIEW.md
+design_preview.html
