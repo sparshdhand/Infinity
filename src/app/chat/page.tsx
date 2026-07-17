@@ -1007,8 +1007,8 @@ export default function ChatPage() {
   function renderSidebarItem(sess: SessionPreview) {
     const isActive = activeSessionId === sess.id;
     const desc = sess.diagnoses && sess.diagnoses.length > 0 
-      ? sess.diagnoses.join(', ') 
-      : 'Copied session';
+      ? sess.diagnoses.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ') 
+      : 'Coping Session';
 
     return (
       <div

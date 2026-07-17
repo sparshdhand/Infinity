@@ -155,10 +155,23 @@ Your interactions MUST adhere to the following rules:
       },
     });
 
-    // Update session timestamp so it floats to the top of list
+    // Update session timestamp and diagnoses so it floats to the top of list
+    const categories = matchedGuidelines
+      .map(g => {
+        const meta = typeof g.metadata === 'string' ? JSON.parse(g.metadata) : g.metadata;
+        return meta?.category;
+      })
+      .filter((cat): cat is string => typeof cat === 'string' && cat.length > 0);
+
+    const existingDiagnoses = chatSession.diagnoses || [];
+    const newDiagnoses = Array.from(new Set([...existingDiagnoses, ...categories]));
+
     await prisma.session.update({
       where: { id: chatSession.id },
-      data: { updatedAt: new Date() },
+      data: { 
+        updatedAt: new Date(),
+        diagnoses: newDiagnoses,
+      },
     });
 
     return NextResponse.json({
