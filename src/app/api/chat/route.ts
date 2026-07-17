@@ -214,10 +214,40 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json({ messages });
     } else {
-      const sessions = await prisma.session.findMany({
+      const dbSessions = await prisma.session.findMany({
         where: { userId },
+        include: {
+          messages: {
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+          }
+        },
         orderBy: { updatedAt: 'desc' },
       });
+
+      const sessions = dbSessions.map(s => {
+        let title = 'Coping Session';
+        if (s.messages && s.messages.length > 0) {
+          const firstMsg = s.messages[0].content;
+          const cleanText = firstMsg.trim().replace(/^[\*\-\s]+/, '');
+          if (cleanText.length > 35) {
+            title = cleanText.substring(0, 32) + '...';
+          } else {
+            title = cleanText;
+          }
+          title = title.charAt(0).toUpperCase() + title.slice(1);
+        }
+
+        return {
+          id: s.id,
+          triageDate: s.triageDate,
+          diagnoses: s.diagnoses,
+          severity: s.severity,
+          updatedAt: s.updatedAt,
+          title,
+        };
+      });
+
       return NextResponse.json({ sessions });
     }
   } catch (error: any) {

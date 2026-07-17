@@ -32,6 +32,7 @@ interface SessionPreview {
   diagnoses: string[];
   severity: string | null;
   updatedAt: string;
+  title?: string;
 }
 
 export default function ChatPage() {
@@ -1006,9 +1007,7 @@ export default function ChatPage() {
   // Helper rendering for sidebar conversation items
   function renderSidebarItem(sess: SessionPreview) {
     const isActive = activeSessionId === sess.id;
-    const desc = sess.diagnoses && sess.diagnoses.length > 0 
-      ? sess.diagnoses.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ') 
-      : 'Coping Session';
+    const desc = sess.title || 'Coping Session';
 
     return (
       <div
