@@ -421,7 +421,7 @@ export default function ChatPage() {
 
   if (loadingSession) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-full border-2 border-[var(--accent-healing)] border-t-transparent animate-spin" />
           <p className="font-sans text-[var(--text-secondary)] animate-pulse text-sm">Entering Sanctuary...</p>
@@ -434,7 +434,7 @@ export default function ChatPage() {
   if (!session) {
     return (
       <div 
-        className="h-screen w-screen flex flex-col bg-[var(--bg-primary)] overflow-y-auto scroll-smooth relative"
+        className="h-[100dvh] w-screen flex flex-col bg-[var(--bg-primary)] overflow-y-auto scroll-smooth relative"
         onMouseMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
@@ -776,7 +776,7 @@ export default function ChatPage() {
   const { today, yesterday, older } = getGroupedSessions();
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden font-sans">
+    <div className="h-[100dvh] w-screen flex flex-col bg-[var(--bg-primary)] overflow-hidden font-sans">
       {/* Header Toolbar — rich glassmorphic bar */}
       <header className="shrink-0 h-14 px-5 flex items-center justify-between border-b border-[var(--border-light)] z-20 bg-[var(--card-bg)] backdrop-blur-xl">
         <div className="flex items-center gap-3">
