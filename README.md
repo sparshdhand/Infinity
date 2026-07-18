@@ -2,9 +2,25 @@
 
 > A calm, organic web sanctuary for mental health triage — not a clinical service, but a thoughtful first step.
 
-Infinity Health helps users understand and navigate mental health concerns — panic attacks, acute anxiety, work burnout, grief — through a supportive conversational interface. It uses RAG-powered similarity search over verified clinical guidelines to deliver accurate, grounded responses, paired with guided box breathing exercises to lower distress in the moment.
+### Sections
+[#showcase-problem](#showcase-problem) &middot; [#present-solution](#present-solution) &middot; [#real-world-impact](#real-world-impact) &middot; [#technical-implementation](#technical-implementation)
 
-The product is deliberately **non-clinical**: it is not a substitute for emergency services or professional care. It exists to reduce the cognitive barrier of understanding what you're experiencing, and to point you in a calmer direction.
+---
+
+## <a name="showcase-problem"></a>Showcase Problem
+
+Mental health support systems are often fragmented, difficult to navigate during moments of high distress, or rely on cold, clinical interfaces that increase cognitive friction. When individuals face panic attacks, acute anxiety, burnout, or grief, they need a calm, non-judgmental, and immediate first step rather than clinical jargon or diagnostic walls of text.
+
+At the same time, AI tools in health-adjacent contexts face risks of hallucination, lack of grounding, and inadequate safety rails for crisis situations.
+
+---
+
+## <a name="present-solution"></a>Present Solution
+
+Infinity Health bridges this gap with an empathetic, organic web sanctuary that provides:
+- **Calm Conversational Triage**: Gathers context gradually without overwhelming the user (max 7 diagnostic questions).
+- **In-the-moment De-escalation**: An interactive, animated box breathing guide helps lower physiological distress instantly.
+- **Crisis Detection**: Actively intercepts safety-critical triggers and redirects users to immediate human resources.
 
 ---
 
@@ -19,7 +35,16 @@ The product is deliberately **non-clinical**: it is not a substitute for emergen
 
 ---
 
-## Architecture
+## <a name="real-world-impact"></a>Real World Impact
+
+Infinity Health is designed to lower the barrier to mental health support:
+1. **Immediate De-escalation**: Gives users a tangible tool (box breathing) to focus on when experiencing acute distress.
+2. **Context-Aware Assistance**: Reduces diagnostic delay by helping users formulate their experiences using accurate, grounded concepts before they reach out to professional clinical care.
+3. **Safety Integration**: Intercepts potential self-harm indicators immediately, providing helpful helpline redirects when they matter most.
+
+---
+
+## <a name="technical-implementation"></a>Technical Implementation
 
 ### Stack
 
@@ -106,3 +131,4 @@ npm run dev
 ---
 
 > **Disclaimer:** Infinity Health is not a medical service and is not a substitute for emergency care. If you are in crisis, please contact a local emergency service or a mental health helpline.
+
